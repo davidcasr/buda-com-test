@@ -1,4 +1,6 @@
 import pytest
+import asyncio
+from unittest.mock import patch, AsyncMock
 from app.models.currency import FiatCurrency, CryptoCurrency
 from app.services.buda_service import BudaService
 from app.services.conversion_service import ConversionService
@@ -6,8 +8,10 @@ from app.exceptions.currency_exceptions import (
     CurrencyNotFoundError,
     ConversionError,
     InvalidAmountError,
-    SameCurrencyError
+    SameCurrencyError,
+    BudaAPIError
 )
+from app.core.circuit_breaker import buda_breaker
 
 @pytest.fixture
 async def buda_service():
@@ -30,6 +34,45 @@ async def test_get_conversion_rate(conversion_service):
     with pytest.raises(CurrencyNotFoundError) as exc_info:
         await conversion_service.get_conversion_rate("invalid-market")
     assert "No se encontró información de ticker" in str(exc_info.value)
+
+@pytest.mark.asyncio
+async def test_cache_behavior(conversion_service):
+    # Primera llamada
+    rate1 = await conversion_service.get_conversion_rate("btc-clp")
+    
+    # Segunda llamada (debería usar caché)
+    rate2 = await conversion_service.get_conversion_rate("btc-clp")
+    
+    assert rate1 == rate2
+
+@pytest.mark.asyncio
+async def test_circuit_breaker():
+    # Simular fallos para activar el circuit breaker
+    with patch('httpx.AsyncClient.get', side_effect=Exception("API Error")):
+        service = BudaService()
+        
+        # Intentar varias llamadas para activar el circuit breaker
+        for _ in range(5):
+            with pytest.raises(Exception):
+                await service.get_market_ticker("btc-clp")
+        
+        # Verificar que el circuit breaker está abierto
+        assert buda_breaker.current_state == "open"
+        
+        await service.close()
+
+@pytest.mark.asyncio
+async def test_timeout_handling():
+    # Simular un timeout
+    with patch('httpx.AsyncClient.get', side_effect=asyncio.TimeoutError()):
+        service = BudaService()
+        
+        with pytest.raises(BudaAPIError) as exc_info:
+            await service.get_market_ticker("btc-clp")
+        
+        assert "Timeout" in str(exc_info.value)
+        
+        await service.close()
 
 @pytest.mark.asyncio
 async def test_find_best_conversion(conversion_service):
