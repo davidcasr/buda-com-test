@@ -1,13 +1,26 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Request
 from app.models.currency import ConversionRequest, ConversionResponse
 from app.services.buda_service import BudaService
 from app.services.conversion_service import ConversionService
+from app.middleware.error_handler import error_handler_middleware
+from app.exceptions.currency_exceptions import CurrencyValidationError
+import logging
+
+# Configuración de logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="API de Conversión de Monedas",
     description="API para convertir monedas fiat usando criptomonedas como intermediarias",
     version="1.0.0"
 )
+
+# Agregar middleware de manejo de errores
+app.middleware("http")(error_handler_middleware)
 
 # Inicialización de servicios
 buda_service = BudaService()
@@ -36,19 +49,16 @@ async def convert_currency(
             amount=amount
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise CurrencyValidationError(
+            "Error de validación en los parámetros de entrada",
+            {"error": str(e)}
+        )
 
     final_amount, intermediate_currency = await conversion_service.find_best_conversion(
         request.from_currency,
         request.to_currency,
         request.amount
     )
-
-    if not final_amount or not intermediate_currency:
-        raise HTTPException(
-            status_code=404,
-            detail="No se encontró una ruta de conversión válida"
-        )
 
     return ConversionResponse(
         final_amount=final_amount,
