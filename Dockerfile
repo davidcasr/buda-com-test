@@ -1,5 +1,5 @@
 # Build stage - Instalar dependencias
-FROM python:3.11-slim as builder
+FROM python:3.13-slim as builder
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt
 
 # Production stage - Imagen final optimizada
-FROM python:3.11-slim as production
+FROM python:3.13-slim as production
 
 WORKDIR /app
 
