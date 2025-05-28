@@ -2,6 +2,7 @@ from typing import Dict, Optional
 import httpx
 from datetime import datetime
 import logging
+from app.core.config import settings
 from app.exceptions.currency_exceptions import BudaAPIError, CurrencyNotFoundError
 from app.core.circuit_breaker import circuit_breaker
 from app.core.cache import cache_response
@@ -9,18 +10,18 @@ from app.core.cache import cache_response
 logger = logging.getLogger(__name__)
 
 class BudaService:
-    BASE_URL = "https://www.buda.com/api/v2"
-    TIMEOUT = 10.0  # segundos
-    
     def __init__(self):
         self.client = httpx.AsyncClient(
-            base_url=self.BASE_URL,
-            timeout=self.TIMEOUT,
-            limits=httpx.Limits(max_keepalive_connections=5, max_connections=10)
+            base_url=settings.buda_api_url,
+            timeout=settings.request_timeout,
+            limits=httpx.Limits(
+                max_keepalive_connections=settings.max_keepalive_connections, 
+                max_connections=settings.max_connections
+            )
         )
     
     @circuit_breaker
-    @cache_response(ttl=60)  # Cachear por 1 minuto
+    @cache_response(ttl=settings.cache_ttl_ticker)
     async def get_market_ticker(self, market_id: str) -> Dict:
         """
         Obtiene el último precio de un mercado específico.
@@ -28,7 +29,7 @@ class BudaService:
         try:
             response = await self.client.get(
                 f"/markets/{market_id}/ticker",
-                timeout=self.TIMEOUT
+                timeout=settings.request_timeout
             )
             response.raise_for_status()
             return response.json()
@@ -54,7 +55,7 @@ class BudaService:
             )
     
     @circuit_breaker
-    @cache_response(ttl=300)  # Cachear por 5 minutos
+    @cache_response(ttl=settings.cache_ttl_markets)
     async def get_available_markets(self) -> Dict:
         """
         Obtiene todos los mercados disponibles.
@@ -62,7 +63,7 @@ class BudaService:
         try:
             response = await self.client.get(
                 "/markets",
-                timeout=self.TIMEOUT
+                timeout=settings.request_timeout
             )
             response.raise_for_status()
             return response.json()

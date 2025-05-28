@@ -15,16 +15,6 @@ from app.exceptions.currency_exceptions import (
 )
 from app.core.circuit_breaker import buda_breaker
 
-@pytest.fixture
-async def buda_service():
-    service = BudaService()
-    yield service
-    await service.close()
-
-@pytest.fixture
-def conversion_service(buda_service):
-    return ConversionService(buda_service)
-
 @pytest.mark.asyncio
 async def test_get_conversion_rate(conversion_service):
     """Test para obtener la tasa de conversión."""
