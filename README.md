@@ -2,22 +2,7 @@
 
 API REST que permite convertir monedas fiat (CLP, COP, PEN) usando criptomonedas como intermediarias (BTC, ETH, LTC, BCH) a través de la API de Buda.com.
 
-## 🚀 Características
-
-- Conversión de monedas fiat usando criptomonedas como intermediarias
-- Uso de precios en tiempo real de Buda.com
-- API REST con FastAPI
-- Tests automatizados
-- Contenedorización con Docker
-
-## 📋 Requisitos
-
-- Python 3.11+
-- Docker y Docker Compose (opcional)
-
-## 🛠️ Instalación
-
-### Usando Docker (recomendado)
+## 🛠️ Instalación y Ejecución
 
 1. Clona el repositorio:
 
@@ -32,31 +17,20 @@ cd <nombre-del-directorio>
 docker-compose up --build
 ```
 
-### Instalación local
+La aplicación estará disponible en http://localhost:8000
 
-1. Crea un entorno virtual:
+## 🧪 Ejecutar Tests
+
+Para ejecutar los tests usando Docker:
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # En Windows: venv\Scripts\activate
+docker-compose run --rm api pytest
 ```
 
-2. Instala las dependencias:
+Para ejecutar tests con cobertura:
 
 ```bash
-pip install -r requirements.txt
-```
-
-3. Ejecuta la aplicación:
-
-```bash
-uvicorn main:app --reload
-```
-
-## 🧪 Ejecutar tests
-
-```bash
-pytest
+docker-compose run --rm api pytest --cov=app
 ```
 
 ## 📚 Documentación de la API
@@ -94,10 +68,4 @@ Ejemplo de respuesta:
 }
 ```
 
-## 🤝 Contribución
-
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
+Made with ❤️ by @davidcasr
