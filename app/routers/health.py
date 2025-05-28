@@ -4,7 +4,11 @@ from app.services.health_service import HealthService
 from app.core.config import settings
 from app.core.dependencies import get_health_service
 
-router = APIRouter(prefix="/health", tags=["Health"])
+router = APIRouter(
+    prefix="/health", 
+    tags=["Health"],
+    include_in_schema=False
+)
 
 @router.get("", response_model=HealthResponse)
 async def health_check():
@@ -21,7 +25,6 @@ async def health_check():
 async def liveness_check(health_service: HealthService = Depends(get_health_service)):
     """
     Liveness probe - verifica si la aplicación está viva.
-    Usado por Kubernetes para determinar si reiniciar el pod.
     """
     is_alive = await health_service.check_liveness()
     status = "healthy" if is_alive else "unhealthy"
@@ -38,7 +41,6 @@ async def liveness_check(health_service: HealthService = Depends(get_health_serv
 async def readiness_check(health_service: HealthService = Depends(get_health_service)):
     """
     Readiness probe - verifica si la aplicación está lista para recibir tráfico.
-    Usado por Kubernetes para determinar si enviar tráfico al pod.
     """
     is_ready, dependencies, checks_passed, checks_total = await health_service.check_readiness()
     
